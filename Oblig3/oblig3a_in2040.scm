@@ -40,7 +40,7 @@
 
 
 ;; Oppgave 1c
-;; det er fortsatt den originale fib som brukes, ikke den memoiserte??
+;; det er fortsatt den originale fib som brukes, ikke den memoiserte
 ;; definerer en variabel som holder på verdien utregnet fra (mem-fib 3), men den holder ikke på verdiene
 ;; for (mem-fib 2) og (mem-fib 1), dersom men ønsker disse, må man eksplisitt be om denne verdien.
 ;; dette er nok fordi man bruker define istedefor set!.
@@ -54,10 +54,10 @@
 (define lst (list-to-stream '(1 2 3 4)))
 lst
 
-(define (stream-length? stream) ;; helper to find the length of a stream, used on non-endless streams
+(define (stream-length stream) ;; helper to find the length of a stream, used on non-endless streams
   (if (stream-null? stream)
       0
-      (+ 1 (stream-length? (stream-cdr stream)))))
+      (+ 1 (stream-length (stream-cdr stream)))))
 
 (define (stream-to-list stream . n) ;; . n -> however many items you want
   (define (recurse res s n)
@@ -66,7 +66,7 @@ lst
         (recurse (cons (stream-car s) res) (stream-cdr s) (- n 1))))
            
   (if (null? n)
-      (reverse (recurse '() stream (stream-length? stream))) ;; only streams that are not endless
+      (reverse (recurse '() stream (stream-length stream))) ;; only streams that are not endless
       (reverse (recurse '() stream (car n)))))
                
 (stream-to-list (stream-interval 10 20))
@@ -89,7 +89,7 @@ foo
 ;; Oppgave 2c
 ;; Det vil potensielt bli en veldig dyp rekursjon, som kan ende opp med å bruke mye minne.
 ;; en fordel med strømmer er at man sparer minne, fordi man ikke evaluerer de etterkommende parene før det er behov for dem.
-;; Når vi ser etter duplkater må vi evaluere dem, og dermed vil vi bruke masse minne.
+;; Når vi ser etter duplikater må vi evaluere dem, og dermed vil vi bruke masse minne.
 ;; Dersom vi har en uendelig strøm, vil vi også få en uendelig rekursjon.
 
 
@@ -107,5 +107,5 @@ foo
 (define strm (list-to-stream '(1 2 1 5 2 8 4 5 6 3 8)))
 (show-stream strm)
 (show-stream(remove-duplicates strm))
-(define strim nats)
-(show-stream (remove-duplicates strim))
+
+(show-stream (remove-duplicates nats))
