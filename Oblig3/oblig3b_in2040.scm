@@ -1,7 +1,7 @@
 ;; OBLIG3A - IN2040 - JORUNDHT
+(load "evaluator.scm")
 
-;; Oppgave 1
-;; a
+;; Oppgave 1a
 ;; (foo 2 square) -> 0
 ;; (foo 4 square) -> 16
 ;; (cond ((= cond 2) 0) (else (else 4))) -> 2
@@ -18,9 +18,7 @@
 ;; cond til 3 siden det er en konstant definert i evaluatoren
 ;; og else evalueres til prosedyren (/ x 2), så resultatet blir 2.
 
-(load "evaluator.scm")
-
-;; Oppgave 2
+;; Oppgave 2a
 (define primitive-procedures
   (list (list 'car car)
         (list 'cdr cdr)
@@ -45,7 +43,7 @@
 ;;      her kan vi legge til flere primitiver.
         ))
 
-;; b
+;; Oppgave 2b
 (define (install-primitive! name proc)
   ;; Kaller på metode som finnes i evaluator.scm
   (define-variable! name proc the-global-environment))
@@ -80,7 +78,7 @@
         ((cond? exp) (mc-eval (cond->if exp) env))
         ((and? exp) (eval-and exp env)) ;; Oppgave 3a
         ((or? exp) (eval-or exp env))   ;; Oppgave 3a
-        ((let? exp) (eval-let exp))))   ;; Oppgave 3b
+        ((let? exp) (eval-let exp))))   ;; Oppgave 3c/d
 
 
 (define (special-form? exp)
@@ -93,7 +91,7 @@
         ((cond? exp) #t)
         ((and? exp) #t) ;; oppgave 3a
         ((or? exp) #t)  ;; oppgave 3a
-        ((let? exp) #t) ;; oppgave 3b
+        ((let? exp) #t) ;; oppgave 3c/d
         (else #f)))
 
 ;; Oppgave 3b
@@ -123,23 +121,49 @@
       '()
       (cons (cadar items) (let-expressions (cdr items)))))
 
-(define (let-body exp) (caddr exp))
+(define (let-body exp) (cddr exp))
 
 ;; Gjør om til et lambda-uttrykk,
 ;; egentlig en liste satt opp som et lambda-uttrykk
 (define (transform-let exp)
-  (append (list (list 'lambda
-               (let-variables (cadr exp)) (let-body exp)))
-                    (let-expressions (cadr exp))))
+  ;; Til original let - Oppgave 3c (kommenteres ut for å bruke alternativ
+  (append (list (append (list 'lambda
+                              (let-variables (cadr exp))) (let-body exp)))
+          (let-expressions (cadr exp))))
+
+  ;; Til alternativ let - Oppgave 3d
+  ;;(append (list (append (list 'lambda
+  ;;                            (get-let-variables exp)) (get-let-body exp)))
+  ;;        (get-let-expressions exp)))
 
 ;; Sender lambda-uttrykket til mc-eval
 (define (eval-let exp)
   (mc-eval (transform-let exp) the-global-environment))
 
 
+;; Oppgave 3d - alternativ let
+;; Henter variabelnavn
+(define (get-let-variables items)
+  (cond ((or (null? items) (eq? 'in (car items))) '())
+        ((eq? '= (cadr items))
+         (cons (car items) (get-let-variables (cdr items))))
+        (else (get-let-variables (cdr items)))))
+
+;; Henter alle verdier
+(define (get-let-expressions items)
+  (cond ((or (null? items) (eq? 'in (car items))) '())
+        ((or (eq? 'and (cadr items)) (eq? 'in (cadr items)))
+         (cons (car items) (get-let-expressions (cdr items))))
+        (else (get-let-expressions (cdr items)))))
+
+;; Henter alle uttrykk
+(define (get-let-body lst)
+  (cdr (memq 'in lst)))
+
+
 ;;; For å starte read-eval-print loopen og initialisere 
 ;;; den globale omgivelsen, kjør:
-(set! the-global-environment (setup-environment))
-(define global the-global-environment)
+;;; (set! the-global-environment (setup-environment))
+;;; (define global the-global-environment)
 ;;; (read-eval-print-loop)
-(define repl read-eval-print-loop)
+(define repl read-eval-print-loop) ;for å slippe å skrive hele
