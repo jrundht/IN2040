@@ -30,6 +30,8 @@
         (list '* *)
         (list '/ /)
         (list '= =)
+        (list '< <) ;; lagt til
+        (list '> >) ;; lagt til
         (list 'eq? eq?)
         (list 'equal? equal?)
         (list 'display 
@@ -46,23 +48,35 @@
 ;; Oppgave 2b
 (define (install-primitive! name proc)
   ;; Kaller på metode som finnes i evaluator.scm
-  (define-variable! name proc the-global-environment))
- 
+  (define-variable! name
+    (list 'primitive proc) the-global-environment))
 
-;;(install-primitive! 'square (lambda (x) (* x x)))
+;; test:
+;(install-primitive! 'square (lambda (x) (* x x))) 
+
 
 ;; Oppgave 3a
+;; kaller på en metode fra evaluator.scm som sjekker at
+;; første element i listen er 'and
 (define (and? exp)
   (tagged-list? exp 'and))
 
 (define (eval-and exp env)
-  (and (mc-eval (cadr exp) env) (mc-eval (caddr exp) env)))
+  (cond ((null? exp) #t) ;; hvis det ikke er flere uttrykk var alle andre #t
+        ((eq? 'and (car exp))
+         (eval-and (cdr exp) env))
+        ((not (mc-eval (car exp) env)) #f) ;; Alle må være #t
+        (else (eval-and (cdr exp) env))))
 
 (define (or? exp)
   (tagged-list? exp 'or))
 
 (define (eval-or exp env)
-  (or (mc-eval (cadr exp) env) (mc-eval (caddr exp) env)))
+  (cond ((null? exp) #f)
+        ((eq? 'or (car exp))
+         (eval-or (cdr exp) env))
+        ((mc-eval (car exp) env) #t) ;; trenger bare at en er #t
+        (else (eval-or (cdr exp) env))))
 
 (define (eval-special-form exp env)
   (cond ((quoted? exp) (text-of-quotation exp))
@@ -89,33 +103,37 @@
         ((lambda? exp) #t)
         ((begin? exp) #t)
         ((cond? exp) #t)
-        ((and? exp) #t) ;; oppgave 3a
-        ((or? exp) #t)  ;; oppgave 3a
-        ((let? exp) #t) ;; oppgave 3c/d
+        ((and? exp) #t)     ;; oppgave 3a
+        ((or? exp) #t)      ;; oppgave 3a
+        ((let? exp) #t)     ;; oppgave 3c/d
         (else #f)))
 
-;; Oppgave 3b
-;; har ikke klart å få til vilkårlig mange elsif
-(define-syntax eval-if
-  (syntax-rules (else elsif)
-    ((eval-if condition body1
-         elsif condition1 body2
-         else body3)
-     (cond (condition body1)
-           (condition1 body2)
-           (else body3)))))
 
-;; Oppgave 3c
+;; Oppgave 3b
+;; redefinerer eval-if, kan ikke lenger skrive ordinær if-setning
+(define (eval-if exp env)
+  (cond ((null? exp) '())
+        ((or (eq? 'if (car exp)) (eq? 'elsif (car exp)))
+         (if (mc-eval (cadr exp) env)
+             (mc-eval (cadddr exp) env)
+             (eval-if (cdr exp) env)))
+        ((eq? 'else (car exp))
+         (mc-eval (cadr exp) env))
+        (else (eval-if (cdr exp) env))))  
+
+
+;; Oppgave 3c - vanlig let -> (let ((x 4)) (* x x))
 (define (let? exp)
   (tagged-list? exp 'let))
 
-;; hent ut variablene i let-uttrykk rekursivt
+
+;; Hent ut variablene i let-uttrykk rekursivt (x, y, z,..)
 (define (let-variables items)
   (if (null? items)
       '()
       (cons (caar items) (let-variables (cdr items)))))
 
-;; hent ut uttrykkene bundet til hver let rekursivt 
+;; Hent ut uttrykkene bundet til hver let rekursivt 
 (define (let-expressions items)
   (if (null? items)
       '()
@@ -133,16 +151,15 @@
 
   ;; Til alternativ let - Oppgave 3d
   ;;(append (list (append (list 'lambda
-  ;;                            (get-let-variables exp)) (get-let-body exp)))
-  ;;        (get-let-expressions exp)))
+    ;;                          (get-let-variables exp)) (get-let-body exp)))
+      ;;    (get-let-expressions exp)))
 
 ;; Sender lambda-uttrykket til mc-eval
 (define (eval-let exp)
   (mc-eval (transform-let exp) the-global-environment))
 
-
 ;; Oppgave 3d - alternativ let
-;; Henter variabelnavn
+;; Henter variabelnavn - (x, y, z,..)
 (define (get-let-variables items)
   (cond ((or (null? items) (eq? 'in (car items))) '())
         ((eq? '= (cadr items))
@@ -160,6 +177,8 @@
 (define (get-let-body lst)
   (cdr (memq 'in lst)))
 
+;; test:
+;; (let x = 2 and y = 3 in (display (cons x y))(+ x y))
 
 ;;; For å starte read-eval-print loopen og initialisere 
 ;;; den globale omgivelsen, kjør:
