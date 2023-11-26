@@ -1,1 +1,2 @@
-# IN2040
+# IN2040 - Functional programming 
+ UiO
